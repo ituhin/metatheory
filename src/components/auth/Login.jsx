@@ -232,7 +232,7 @@ const Login = () => {
           </div>
           <div>
             <Link
-              to="/"
+              to="/?redirect=false"
               className="text-gray-500 text-sm hover:underline"
             >
               Back to Home
