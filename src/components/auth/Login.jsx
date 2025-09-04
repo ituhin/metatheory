@@ -90,6 +90,7 @@ const Login = () => {
         localStorage.setItem("userRole", user.role);
         localStorage.setItem("userId", user.userId);
         localStorage.setItem("email", email);
+        localStorage.setItem("loggedInUser", JSON.stringify(user));
         
         // Create log entry for admin tracking
         const logData = {
