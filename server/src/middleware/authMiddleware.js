@@ -3,7 +3,12 @@ require('dotenv').config();
 
 // General Authentication Middleware
 const protect = (req, res, next) => {
-    const token = req.header("Authorization");
+    //const token = req.header("Authorization");
+    let token = req.headers.authorization;
+    if (token && token.startsWith('Bearer ')) {
+        token = token.split(' ')[1];
+    }
+
     if (!token) return res.status(401).json({ message: "Unauthorized access" });
 
     try {
