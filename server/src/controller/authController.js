@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const { userLoggedInEntry, userLoggedOutEntry } = require('../lib/usersLog');
-const { userObjResponse } = require('../helper/utils');
+const { userObjResponse, getClientIp } = require('../helper/utils');
 
 const registerUser = async (req, res) => {
     try {
@@ -19,7 +19,7 @@ const registerUser = async (req, res) => {
   
       const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
   
-      const ipAddress = req.ip || req.connection.remoteAddress;
+      const ipAddress = getClientIp(req);
       await userLoggedInEntry(user, token, ipAddress);
   
       res.json({ token, user: userObjResponse(user) });
@@ -46,8 +46,7 @@ const registerUser = async (req, res) => {
       const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
       // ideally there should be a session module on the server side to handle this things
   
-      const ipAddress = req.ip || req.connection.remoteAddress;
-      console.log(req.ip, 222, req.connection.remoteAddress);
+      const ipAddress = getClientIp(req);
       await userLoggedInEntry(user, token, ipAddress);
   
       res.json({ token, user: userObjResponse(user) });
