@@ -52,11 +52,6 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      const isAdminPortal = location.pathname.startsWith("/admin");
-
-      // Remove the correct profile from storage
-      localStorage.removeItem(isAdminPortal ? "adminProfile" : "userProfile");
-
       navigate("/");
     } catch (err) {
       console.error("Logout failed:", err);

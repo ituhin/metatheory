@@ -86,6 +86,27 @@ const ProtectedRoute = ({ children, requiredRole }) => {
 };
 
 /**
+ * Landing Route Component
+ * 
+ * Handles conditional rendering of the Landing page based on authentication
+ * and query parameters (redirect=false to allow public access).
+ */
+const LandingRoute = () => {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const redirect = queryParams.get("redirect");
+
+  // If not authenticated and redirect is not explicitly false, go to login
+  if (!isAuthenticated && redirect !== "false") {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  // Show landing page for authenticated users or when redirect=false
+  return <Landing />;
+};
+
+/**
  * Main App Component
  * 
  * Defines the application's routing structure and wraps the app with necessary providers.
@@ -101,13 +122,21 @@ function App() {
             <main className="flex-grow">
               <Routes>
                 {/* Public Routes */}
-                <Route path="/" element={<Landing />} />
+                <Route path="/" element={<LandingRoute />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 
                 {/* Protected Admin Routes */}
+                <Route 
+                  path="/" 
+                  element={
+                    <ProtectedRoute>
+                      <Landing />
+                    </ProtectedRoute>
+                  } 
+                />
                 <Route 
                   path="/admin/dashboard" 
                   element={

@@ -15,6 +15,8 @@
  */
 
 import React, { createContext, useState, useContext, useEffect } from "react";
+import { API_HOST } from "../config/config";
+import axios from 'axios';
 
 // Create the authentication context
 const AuthContext = createContext();
@@ -40,10 +42,12 @@ const AuthProvider = ({ children }) => {
    * This ensures authentication persists across page refreshes
    */
   const [user, setUser] = useState(() => {
+
     const token = localStorage.getItem("token");
-    const email = localStorage.getItem("email");
-    
-    return token && email ? { email } : null;
+    const userId = localStorage.getItem("userId");
+    const userRole = localStorage.getItem("userRole");
+
+    return token && userId && userRole ? { userId, role: userRole } : null;
   });
   
   const [loading, setLoading] = useState(true);
@@ -58,21 +62,17 @@ const AuthProvider = ({ children }) => {
         const token = localStorage.getItem("token");
         
         if (token) {
-          // In a real app, we would validate the token with the server
-          // For this demo, we'll just check if it exists
-          const email = localStorage.getItem("email");
-          
-          if (email) {
-            setUser({ email });
+          const userId = localStorage.getItem("userId");
+          const userRole = localStorage.getItem("userRole");
+          if (userId && userRole) {
+            setUser({ userId, role: userRole });
           } else {
-            // If email is missing but token exists, something is wrong
-            // Clear authentication data
-            handleLogout();
+            await logout();
           }
         }
       } catch (error) {
         console.error("Authentication check failed:", error);
-        handleLogout();
+        await logout();
       } finally {
         setLoading(false);
       }
@@ -81,48 +81,57 @@ const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
+  const setLocalStorageSession = function(token, user){
+    localStorage.setItem('token', token);
+    localStorage.setItem('userId', user.userId); // keeping existing setup/structure
+    localStorage.setItem('userRole', user.role);
+    localStorage.setItem('loggedInUser', JSON.stringify(user));
+  }
+
   /**
    * Handles user login
    * @param {string} email - User's email
    * @param {string} password - User's password (not used in mock implementation)
    * @returns {Promise<Object>} User data
    */
-  const login = async (email, password) => {
-    // In a real app, this would make an API call
-    // For this demo, we just update the state
-    setUser({ email });
-    return { email };
+  const login = async (email, password, role) => {
+    const response = await axios.post(`${API_HOST}/api/auth/login`, { email, password, role });
+    const { token, user } = response.data;
+    setLocalStorageSession(token, user);
+    setUser(user);
+    return user;
   };
 
-  /**
-   * Handles user signup
-   * @param {string} email - User's email
-   * @param {string} password - User's password
-   * @returns {Promise<Object>} User data
-   */
-  const signup = async (email, password) => {
-    // In a real app, this would make an API call
-    // For this demo, we just update the state
-    setUser({ email });
-    return { email };
+  const signup = async (fullName, email, password, role) => {
+    const response = await axios.post(`${API_HOST}/api/auth/register`, { fullName, email, password, role });
+    const { token, user } = response.data;
+    setLocalStorageSession(token, user);
+    setUser(user);
+    return user;
   };
 
-  /**
-   * Handles user logout
-   * Clears authentication data and resets state
-   */
-  const handleLogout = () => {
-    // Clear all auth-related data from localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("email");
-    
-    // Reset user state
-    setUser(null);
-    
-    // In a real app, we might also invalidate the token on the server
-    console.log("User logged out");
+  const logout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        await axios.post(`${API_HOST}/api/auth/logout`, {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("email");
+        localStorage.removeItem("adminProfile");
+        localStorage.removeItem("userProfile");
+        localStorage.removeItem("loggedInUser");
+           
+        setUser(null);
+
+    }
   };
 
   /**
@@ -154,7 +163,7 @@ const AuthProvider = ({ children }) => {
     loading,
     login,
     signup,
-    logout: handleLogout,
+    logout,
     resetPassword,
     hasRole,
     isAdmin: () => hasRole("admin"),

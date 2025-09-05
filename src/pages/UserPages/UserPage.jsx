@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import UserSidebar from "./UserSidebar";
+import TaskFilter from "../../components/tasks/TaskFilterNew";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const UserPage = () => {
   const [tasks, setTasks] = useState([]);
+  const [filteredTasks, setFilteredTasks] = useState([]);
   const [loggedInUser, setLoggedInUser] = useState(""); // ✅ Store logged-in user
   const [newTask, setNewTask] = useState({
     title: "",
@@ -17,11 +19,12 @@ const UserPage = () => {
   useEffect(() => {
     // ✅ Fetch logged-in user from localStorage
     const storedUser = JSON.parse(localStorage.getItem("loggedInUser"));
-    setLoggedInUser(storedUser?.name || "Unknown User");
+    setLoggedInUser(storedUser?.fullName || "Unknown User");
 
     // ✅ Fetch stored tasks
     const storedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
     setTasks(storedTasks);
+    setFilteredTasks(storedTasks);
   }, []);
 
   // Handle Task Creation
@@ -37,9 +40,11 @@ const UserPage = () => {
       ...newTask, 
       assignedTo: loggedInUser // ✅ Store assigned user
     };
+    console.log(loggedInUser);
 
     const updatedTasks = [...tasks, newTaskItem];
     setTasks(updatedTasks);
+    setFilteredTasks(updatedTasks);
     localStorage.setItem("tasks", JSON.stringify(updatedTasks));
 
     toast.success("Task added successfully!", { icon: "✅" });
@@ -52,7 +57,7 @@ const UserPage = () => {
     const updatedTasks = tasks.filter((task) => task.id !== taskId);
     setTasks(updatedTasks);
     localStorage.setItem("tasks", JSON.stringify(updatedTasks));
-
+    setFilteredTasks(updatedTasks);
     toast.error("Task removed successfully!", { icon: "🗑️" });
   };
 
@@ -63,6 +68,7 @@ const UserPage = () => {
     );
 
     setTasks(updatedTasks);
+    setFilteredTasks(updatedTasks);
     localStorage.setItem("tasks", JSON.stringify(updatedTasks));
   };
 
@@ -86,7 +92,8 @@ const UserPage = () => {
         </h1>
 
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
-
+        
+        <div className="flex flex-col md:flex-row gap-6 mb-8">
         {/* Task Creation Box */}
         <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-lg mb-8 border border-gray-200">
           <h2 className="text-2xl font-semibold text-gray-800 mb-4">Create a New Task</h2>
@@ -149,12 +156,15 @@ const UserPage = () => {
           </form>
         </div>
 
+        {/* Task Filter */}
+        <TaskFilter tasks={tasks} setTasks={setTasks} setFilteredTasks={setFilteredTasks} />
+        </div>
         {/* Task List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tasks.length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <p className="text-gray-600">No tasks created yet. Start by adding a task!</p>
           ) : (
-            tasks.map((task) => (
+            filteredTasks.map((task) => (
               <div key={task.id} className="bg-white shadow-md p-4 rounded-md border-l-4 border-blue-400">
                 <h3 className="text-lg font-semibold">{task.title}</h3>
                 <p className="text-gray-600">{task.description}</p>
